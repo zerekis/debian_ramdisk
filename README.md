@@ -31,7 +31,7 @@ Any additional information goes here
 - [Creating mounting point](#creating-mounting-point)
 [Creating Services and Scripts](#creating-services-and-scripts)
 - [Creating backup directory](#creating-backup-directory)
-- [Creating Reserved copy](#createing-reserved-copy)
+- [Creating Reserved copy](#creating-reserved-copy)
 - [Restore Data](#restore-data)
 - [Service for mounting RAM-disk](#service-for-mounting-ram-disk) 
 [Applying and testing](#applying-and-testing)
@@ -79,7 +79,7 @@ sudo chmod 755 /var/backups
 > Note:
 > `/var` should be restricted for users. Only Administrator privileges should have an access to this. Thats why I will assign system account privileges to it.
 
-### Creating Reserved copy
+## Creating Reserved copy
 Reserved copy will be created when service `mount-ramdisk.service` stops . 
 
 Create file `save_ramdisk.sh` and insert next block of code:
@@ -135,7 +135,7 @@ fi
 
 `sudo chmod +x /usr/local/bin/restore_ramdisk.sh`
 
-## Service for mounting RAM-disk(#service-for-mounting-ram-disk) 
+## Service for mounting RAM-disk
 
 Create file:
 `sudo nano /etc/systemd/system/mount-ramdisk.service`
