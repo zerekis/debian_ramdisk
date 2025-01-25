@@ -1,4 +1,3 @@
-
 # RamDisk for Debian 12 
 
 In this Tutorial we shall create a RamDisk using brd.ko on Debian 12.
