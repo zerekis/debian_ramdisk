@@ -148,19 +148,24 @@ Wants=local-fs.target
 [Service]
 Type=oneshot
 RemainAfterExit=true
+
 ExecStartPre=/sbin/modprobe brd rd_nr=1 rd_size=1048576
 ExecStartPre=/bin/bash -c 'mkdir -p /mnt/ramdisk && chmod 755 /mnt/ramdisk'
+
 ExecStart=/sbin/mkfs.ext4 -q /dev/ram0
+
 ExecStartPost=/bin/mount /dev/ram0 /mnt/ramdisk
-ExecStartPost=/bin/chown -R $(id -un):$(id -gn) /mnt/ramdisk
+ExecStartPost=/bin/bash -c 'chown -R $(id -un):"$(id -gn)" /mnt/ramdisk'
 ExecStartPost=/bin/chmod -R 700 /mnt/ramdisk
 ExecStartPost=/usr/local/bin/restore_ramdisk.sh
+
 ExecStop=/usr/local/bin/save_ramdisk.sh
 ExecStopPost=/bin/umount /mnt/ramdisk
 ExecStopPost=/sbin/rmmod brd
 
 [Install]
 WantedBy=multi-user.target
+
 ```
 
 
