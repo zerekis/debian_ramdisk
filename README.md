@@ -1,12 +1,10 @@
 
-# RamDisk for Debian 12 
-
-In this Tutorial I'll shall show you how to create a Ram Drive using brd.ko on Debian 12.
-RAM Drive will be saved in backup file whenever process will stop. And restore information from it when process starts.
-
+# RamDisk for Debian 12
+In this Tutorial, I will show you how to create a Ram-disk using brd.ko on Debian 12.
+RAM Drive will be saved in backup file whenever process will stop, and restore information from it when process starts.
 ___
 > Note:
-> Currenty, only configuration process is available, and you can download these files. In the future, I'll create an installation script file.
+> Currently, only configuration files are available, and you can download these files. In the future, I'll create an installation script file.
 ## Structure
 
 What should be in the end:
@@ -15,17 +13,14 @@ What should be in the end:
 - Reserve copy: `/var/backups/ramdisk-backup.tar.gz`  
 
 ## Service
- - `mount-ramdisk.service` - creating and mounting RAM-drive
+ - `mount-ramdisk.service` - creating and mounting RAM-disk.
 
 ## Script
 `/usr/local/bin/restore_ramdisk.sh`  
 `/usr/local/bin/save_ramdisk.sh`  
 
 
-## Appendix
-
-Any additional information goes here
-
+## Getting Started
 
 [Installation](#installation)
 - [Creating mounting point](#creating-mounting-point)
@@ -36,20 +31,25 @@ Any additional information goes here
 - [Service for mounting RAM-disk](#service-for-mounting-ram-disk) 
 [Applying and testing](#applying-and-testing)
 - [Checking backup](#checking-backup)
+
 # Installation
 
+Use this command to set a block inside of your memory with 1G.
 `echo "options brd rd_nr=1 rd_size=1048576" | sudo tee /etc/modprobe.d/brd.conf`
 
 - `rd_nr=1` - RAM disk quantity.
-- `rd_size=1048576` - Disk size
+- `rd_size=1048576` - Disk size.
 
 ### Update 'initramfs' to apply configuration:
-`sudo update-initramfs -u`
+```sudo update-initramfs -u```
 
 ### Check module for loading up
-`sudo modprobe brd`
-`lsmod | grep brd`  
-`ls/dev/ram*`
+`modprobe brd`. It will load the configuration that you have already created.
+```sudo modprobe brd```  
+
+Check your device that was loaded.
+```lsmod | grep brd```  
+```ls/dev/ram*```
 
 
 ## Creating mounting point
@@ -58,13 +58,12 @@ sudo mkdir -p /mnt/ramdisk
 sudo chown $USER:$GROUP /mnt/ramdisk
 sudo chmod 700 /mnt/ramdisk
 ```
-This will create directory in `/mnt/`.
-Than you will assign user and group of current user that will have an access to it.
-With `chmod 700` you will give read and wirte access to this folder of current user.
-
+This will create a directory in `/mnt/`.
+Then you will assign a user and group of the current user that will have access to it.
+With `chmod 700` you will give read and write access to this folder of the current user.
 > Note:
->  `$USER:$GROUP` applies current user from bash command. If you want to switch to system account,
->   type `su -` and enter Paassword of root. After that applying `$USER:$GROUP` will connected with root account. Othewise, you can use insted of `$USER:$GROUP` different account or group like this,
+> `$USER:$GROUP` applies the current user from the bash command. If you want to switch to a system account,
+> type `su -` and enter the Password of the root account. After that applying `$USER:$GROUP` will connect with the root account. Otherwise, you can use instead of `$USER:$GROUP` different account or group like this,
 >`root:root` or your account:group, similar to mine `zerekis:zerekis`
 
 
@@ -77,14 +76,13 @@ sudo chown root:root /var/backups
 sudo chmod 755 /var/backups
 ```
 > Note:
-> `/var` should be restricted for users. Only Administrator privileges should have an access to this. Thats why I will assign system account privileges to it.
+> `/var` should be restricted for users. Only Administrator privileges should have access to this. That's why I will assign system account privileges to it.
 
 ## Creating Reserved copy
-Reserved copy will be created when service `mount-ramdisk.service` stops . 
+A Reserve copy will be created when service `mount-ramdisk.service` stops. 
 
-Create file `save_ramdisk.sh` and insert next block of code:
-`sudo nano /usr/local/bin/save_ramdisk.sh`
-
+Create the file `save_ramdisk.sh` and insert the next block of code:
+```sudo nano /usr/local/bin/save_ramdisk.sh```
 
 ```
 #!/bin/bash
@@ -106,12 +104,12 @@ fi
 ```
 
 Make this file executable:
-`sudo chmod +x /usr/local/bin/save_ramdisk.sh`
+```sudo chmod +x /usr/local/bin/save_ramdisk.sh```
 
 
-### Restore Data '/usr/local/bin/restore_ramdisk.sh`
-Use this command to create file:
-`sudo nano /usr/local/bin/restore_ramdisk.sh`
+### Restore Data
+Use this command to create the file: 
+```sudo nano /usr/local/bin/restore_ramdisk.sh```
 
 Paste or type this code into the script:
 ```
@@ -131,9 +129,9 @@ else
 fi
 ```
 
-### Make sctipt executable
+### Make a script executable
 
-`sudo chmod +x /usr/local/bin/restore_ramdisk.sh`
+```sudo chmod +x /usr/local/bin/restore_ramdisk.sh```
 
 ## Service for mounting RAM-disk
 
@@ -150,12 +148,15 @@ Wants=local-fs.target
 [Service]
 Type=oneshot
 RemainAfterExit=true
-ExecStartPre=/bin/bash -c 'mountpoint -q /mnt/ramdisk && umount /mnt/ramdisk || :'
+ExecStartPre=/sbin/modprobe brd rd_nr=1 rd_size=1048576
+ExecStartPre=/bin/bash -c 'mkdir -p /mnt/ramdisk && chmod 755 /mnt/ramdisk'
 ExecStart=/sbin/mkfs.ext4 -q /dev/ram0
 ExecStartPost=/bin/mount /dev/ram0 /mnt/ramdisk
-ExecStartPost=/bin/chown -R zerekis:zerekis /mnt/ramdisk
+ExecStartPost=/bin/chown -R $(id -un):$(id -gn) /mnt/ramdisk
 ExecStartPost=/bin/chmod -R 700 /mnt/ramdisk
-ExecStop=/bin/bash -c 'tar -czf /var/backups/ramdisk-backup.tar.gz -C /mnt/ramdisk . && umount /mnt/ramdisk'
+ExecStartPost=/usr/local/bin/restore_ramdisk.sh
+ExecStop=/usr/local/bin/save_ramdisk.sh
+ExecStopPost=/bin/umount /mnt/ramdisk
 ExecStopPost=/sbin/rmmod brd
 
 [Install]
@@ -165,8 +166,12 @@ WantedBy=multi-user.target
 
 ### Applying and testing
 #### Activating Services
+Apply configuration:
 ```
 sudo systemctl daemon-reload
+```
+Enable this service:
+```
 sudo systemctl enable mount-ramdisk.service
 ```
 
@@ -176,7 +181,7 @@ sudo systemctl enable mount-ramdisk.service
 
 #### Restarting RAM-drive and checking restored backup
 ```
-sudo systemctl start mount-ramdisk.service
+sudo systemctl restart mount-ramdisk.service
 sudo ls -l /mnt/ramdisk
 sudo systemctl status mount-ramdisk.service
 ```
